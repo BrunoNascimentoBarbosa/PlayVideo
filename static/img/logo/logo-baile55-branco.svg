@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200px" height="50px" viewBox="0 0 200 50" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <g id="Logo-Baile55-Branco" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <path d="M25,40 C33.2842712,40 40,33.2842712 40,25 C40,16.7157288 33.2842712,10 25,10 C16.7157288,10 10,16.7157288 10,25 C10,33.2842712 16.7157288,40 25,40 Z M25,37 C31.627417,37 37,31.627417 37,25 C37,18.372583 31.627417,13 25,13 C18.372583,13 13,18.372583 13,25 C13,31.627417 18.372583,37 25,37 Z" id="Circle" fill="#FFFFFF"></path>
+        <path d="M22,20 L30,25 L22,30 L22,20 Z" id="Play-Icon" fill="#FFFFFF"></path>
+        <path d="M50,28 L50,22 L55,22 C56.6568542,22 58,23.3431458 58,25 C58,26.6568542 56.6568542,28 55,28 L50,28 Z M50,18 L50,15 L54,15 C55.1045695,15 56,15.8954305 56,17 L56,18 L50,18 Z M46,32 L55,32 C59.418278,32 63,28.418278 63,24 C63,20.6666667 60.6666667,18 58,17 C58,14.2385763 55.7614237,12 53,12 L46,12 L46,32 Z" id="Letter-B" fill="#FFFFFF"></path>
+        <path d="M65,32 L69,32 L69,22 L65,22 L65,32 Z M65,20 L69,20 L69,16 L65,16 L65,20 Z" id="Letter-i" fill="#FFFFFF"></path>
+        <path d="M87,32 L83,32 L83,26 C83,24.8954305 82.1045695,24 81,24 C79.8954305,24 79,24.8954305 79,26 L79,32 L75,32 L75,16 L79,16 L79,22 C79.8944273,21.3659989 81.0268733,21 82.3339744,21 C85.0181839,21 87,23.3333333 87,26 L87,32 Z" id="Letter-n" fill="#FFFFFF"></path>
+        <polygon id="Number-5" fill="#FFFFFF" points="111 32 111 28 116 28 116 24 111 24 111 20 120 20 120 16 107 16 107 32"></polygon>
+        <polygon id="Number-5" fill="#FFFFFF" points="131 32 131 28 136 28 136 24 131 24 131 20 140 20 140 16 127 16 127 32"></polygon>
+        <text id="Video-Platform" font-family="Poppins, Arial, sans-serif" font-size="14" font-weight="normal" fill="#FFFFFF">
+            <tspan x="73" y="15">Video Platform</tspan>
+        </text>
+    </g>
+</svg> 

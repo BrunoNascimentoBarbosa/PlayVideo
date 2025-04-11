@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-bs-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <input type="hidden" name="csrfmiddlewaretoken" value="4cSKTmZDXsrAZdj3M3XrQy6qWbPaLUwuxjA9IRoI3Rk2vUPUgc9Tum0GOwwfEGIO">
+    <meta name="csrf-token" content="4cSKTmZDXsrAZdj3M3XrQy6qWbPaLUwuxjA9IRoI3Rk2vUPUgc9Tum0GOwwfEGIO">
+    <title>Início - 55Jam</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- CSS Customizado -->
+    
+    <link rel="stylesheet" href="/static/css/main.37a2f3422ea3.css">
+    <link rel="stylesheet" href="/static/css/theme.88a518b5c526.css">
+
+    <!-- CSS para o widget de chat -->
+    <link rel="stylesheet" href="/static/css/chat-widget.eb84a7b6e3b7.css">
+
+    <!-- Script para gerenciar temas claro/escuro com toggle de botão -->
+    <script>
+        /**
+         * Sistema de temas do 55Jam
+         * Implementação com botão de alternância direta entre temas:
+         * - Clique alterna entre Modo Claro e Modo Escuro
+         */
+
+        // Aplicar o tema imediatamente para evitar flash de tema incorreto
+        (function () {
+            // Obtém o tema salvo ou padrão
+            const savedTheme = localStorage.getItem('theme') || 'light';
+
+            // Aplica imediatamente para evitar flash
+            document.documentElement.setAttribute('data-bs-theme', savedTheme);
+        })();
+
+        // Função para obter o tema atual
+        function getCurrentTheme() {
+            return localStorage.getItem('theme') || 'light';
+        }
+
+        // Função para alternar entre temas claro e escuro
+        function toggleTheme() {
+            const currentTheme = getCurrentTheme();
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+            // Salva a preferência do usuário
+            localStorage.setItem('theme', newTheme);
+            console.log('Tema alterado para:', newTheme);
+
+            // Aplica o tema e atualiza a interface
+            applyTheme(newTheme);
+            updateThemeIcon(newTheme);
+        }
+
+        // Função para aplicar o estilo do tema a elementos específicos que podem não seguir o tema global
+        function applyThemeToSpecificElements(theme) {
+            // 1. Forçar cores em inputs e formulários que podem não respeitar o tema
+            const isDark = (theme === 'dark');
+
+            // Estilo personalizado para garantir que tudo siga o tema
+            const styleEl = document.getElementById('theme-override-styles') || document.createElement('style');
+            if (!styleEl.id) {
+                styleEl.id = 'theme-override-styles';
+                document.head.appendChild(styleEl);
+            }
+
+            // Regras CSS específicas para corrigir elementos que não seguem o tema
+            if (isDark) {
+                styleEl.textContent = `
+                    /* Override para elementos de formulário em modo escuro */
+                    [data-bs-theme="dark"] input, 
+                    [data-bs-theme="dark"] textarea, 
+                    [data-bs-theme="dark"] select,
+                    [data-bs-theme="dark"] .form-control,
+                    [data-bs-theme="dark"] .form-select,
+                    [data-bs-theme="dark"] .btn-outline-secondary,
+                    [data-bs-theme="dark"] .card,
+                    [data-bs-theme="dark"] .modal-content {
+                        background-color: #2b2b2b !important;
+                        color: #e0e0e0 !important;
+                        border-color: #444 !important;
+                    }
+                    
+                    [data-bs-theme="dark"] .btn-secondary,
+                    [data-bs-theme="dark"] .btn-light,
+                    [data-bs-theme="dark"] .btn-outline-secondary {
+                        background-color: #3a3a3a !important;
+                        color: #e0e0e0 !important;
+                        border-color: #555 !important;
+                    }
+                    
+                    [data-bs-theme="dark"] .form-label,
+                    [data-bs-theme="dark"] label {
+                        color: #e0e0e0 !important;
+                    }
+                    
+                    [data-bs-theme="dark"] .table-hover tbody tr:hover {
+                        background-color: rgba(255, 255, 255, 0.1) !important;
+                    }
+                    
+                    /* Corrige itens específicos que podem não mudar de cor */
+                    [data-bs-theme="dark"] .dropdown-menu {
+                        background-color: #333 !important;
+                        border-color: #555 !important;
+                    }
+                    
+                    [data-bs-theme="dark"] .dropdown-item {
+                        color: #e0e0e0 !important;
+                    }
+                    
+                    [data-bs-theme="dark"] .dropdown-item:hover {
+                        background-color: #444 !important;
+                    }
+                `;
+            } else {
+                styleEl.textContent = '';
+            }
+        }
+
+        // Função para aplicar tema específico ao documento HTML
+        function applyThemeToDocument(theme) {
+            // Define o atributo data-bs-theme no elemento HTML
+            document.documentElement.setAttribute('data-bs-theme', theme);
+
+            // Força a aplicação das classes de tema em elementos específicos
+            document.body.classList.remove('theme-light', 'theme-dark');
+            document.body.classList.add('theme-' + theme);
+
+            // Aplica estilos específicos para elementos que não respeitam o tema global
+            applyThemeToSpecificElements(theme);
+
+            console.log('Tema aplicado com sucesso:', theme);
+        }
+
+        // Função principal para aplicar o tema
+        function applyTheme(theme) {
+            // Aplica o tema
+            applyThemeToDocument(theme);
+            return theme;
+        }
+
+        // Função para atualizar o ícone do botão conforme o tema atual
+        function updateThemeIcon(theme) {
+            // Obtém referência ao ícone atual
+            const sunIcon = document.getElementById('theme-icon-sun');
+            const moonIcon = document.getElementById('theme-icon-moon');
+
+            if (!sunIcon || !moonIcon) {
+                console.error('Erro: Ícones de tema não encontrados!');
+                return;
+            }
+
+            // Mostra o ícone adequado para o tema atual
+            if (theme === 'light') {
+                sunIcon.style.display = 'inline-block';
+                moonIcon.style.display = 'none';
+            } else { // dark
+                sunIcon.style.display = 'none';
+                moonIcon.style.display = 'inline-block';
+            }
+
+            console.log('Ícone atualizado para o tema:', theme);
+        }
+
+        // Função de inicialização imediata
+        (function () {
+            const initialTheme = getCurrentTheme();
+            applyTheme(initialTheme);
+            console.log('Sistema de temas inicializado - Tema aplicado:', initialTheme);
+        })();
+
+        // Configuração final quando o DOM estiver completamente carregado
+        document.addEventListener('DOMContentLoaded', function () {
+            // Atualiza o ícone para corresponder ao tema atual
+            updateThemeIcon(getCurrentTheme());
+
+            // Configura o evento de clique no botão de tema
+            const themeToggleBtn = document.getElementById('theme-toggle-btn');
+            if (themeToggleBtn) {
+                themeToggleBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    toggleTheme();
+                });
+            }
+
+            console.log('Sistema de temas configurado e pronto para uso.');
+        });
+    </script>
+
+    
+</head>
+
+<body>
+    <!-- Barra de Navegação -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <img src="/static/img/logo/logo-baile55-branco.f80adbd3ec8c.png" alt="55Jam" class="logo-light">
+                <img src="/static/img/logo/logo-baile55-preto.ad8124d99648.png" alt="55Jam" class="logo-dark">
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    
+                    <li class="nav-item">
+                        <a class="nav-link" href="/accounts/login/">Entrar</a>
+                    </li>
+                    
+
+                    <!-- Link para Apps Parceiros -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="/apps-parceiros/" title="Apps Parceiros">
+                            <i class="fas fa-mobile-alt"></i> Apps Parceiros
+                        </a>
+                    </li>
+
+                    <!-- Link para configuração do Assistente IA -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="/assistant/config/"
+                            title="Configurar Assistente IA">
+                            <i class="fas fa-robot"></i>
+                        </a>
+                    </li>
+
+                    <!-- Botão de alternância de tema -->
+                    <li class="nav-item ms-2">
+                        <a class="nav-link" href="#" id="theme-toggle-btn" title="Alternar tema claro/escuro">
+                            <i id="theme-icon-sun" class="fas fa-sun"></i>
+                            <i id="theme-icon-moon" class="fas fa-moon" style="display: none;"></i>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Conteúdo Principal -->
+    <main class="container py-4">
+        
+
+        
+<div class="row">
+    <div class="col-lg-12 text-center mt-5">
+        <h1 class="display-4">Bem-vindo ao 55Jam</h1>
+        <p class="lead">Plataforma para gestão de cursos online e interação entre professores e alunos.</p>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-body text-center">
+                <i class="fas fa-chalkboard-teacher fa-3x mb-3 text-primary"></i>
+                <h3 class="card-title">Para Professores</h3>
+                <p class="card-text">Crie e gerencie seus cursos, acompanhe seus alunos e organize sua agenda.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-body text-center">
+                <i class="fas fa-user-graduate fa-3x mb-3 text-primary"></i>
+                <h3 class="card-title">Para Alunos</h3>
+                <p class="card-text">Acesse cursos de qualidade, aprenda no seu ritmo e acompanhe seu progresso.</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-body text-center">
+                <i class="fas fa-cogs fa-3x mb-3 text-primary"></i>
+                <h3 class="card-title">Para Administradores</h3>
+                <p class="card-text">Gerencie usuários, monitore a plataforma e obtenha relatórios detalhados.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="row mt-3">
+    <div class="col-12 text-center">
+        <a href="/accounts/login/" class="btn btn-primary btn-lg">Fazer Login</a>
+    </div>
+</div>
+
+
+    </main>
+
+    <!-- Widget de Chat Persistente -->
+    <div class="chat-widget-container">
+        <div class="chat-widget-button" id="chat-widget-button">
+            <i class="chat-widget-icon fas fa-comment"></i>
+        </div>
+
+        <div class="chat-widget-popup" id="chat-widget-popup">
+            <div class="chat-widget-header">
+                <h5 class="mb-0">Assistente Virtual</h5>
+                <div class="chat-widget-controls">
+                    <span class="chat-widget-expand" id="chat-widget-expand" title="Expandir chat">
+                        <i class="fas fa-expand-alt"></i>
+                    </span>
+                    <span class="chat-widget-close" id="chat-widget-close" title="Fechar chat">
+                        <i class="fas fa-times"></i>
+                    </span>
+                </div>
+            </div>
+            <div class="chat-widget-messages" id="chat-widget-messages">
+                <div class="text-center text-muted my-4">
+                    <p>Olá! Como posso ajudar?</p>
+                </div>
+            </div>
+            <form class="chat-widget-input-container" id="chat-widget-form">
+                <input type="text" class="chat-widget-input" id="chat-widget-input"
+                    placeholder="Digite sua mensagem...">
+                <button type="submit" class="chat-widget-send">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Rodapé -->
+    <footer class="py-4 mt-auto border-top">
+        <div class="container text-center">
+            <p class="mb-0">&copy; 2025 55Jam. Todos os direitos reservados.</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap Bundle com Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- JS Customizado -->
+    <script src="/static/js/chat-widget.9cee9414075a.js"></script>
+
+    
+</body>
+
+</html>
