@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% load video_tags %}
+
+{% block title %}
+    {% if current_category %}
+        {{ current_category.name }} Videos - VideoPlay
+    {% else %}
+        Browse Videos - VideoPlay
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Left Sidebar - Categories -->
+    <div class="col-md-3 mb-4">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="fas fa-list"></i> Categories</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                <a href="{% url 'videos:video_list' %}" class="list-group-item list-group-item-action {% if not current_category %}active{% endif %}">
+                    All Videos
+                </a>
+                {% for category in categories %}
+                    <a href="{% url 'videos:video_by_category' category.slug %}" class="list-group-item list-group-item-action {% if current_category.slug == category.slug %}active{% endif %}">
+                        {{ category.name }}
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content - Videos Grid -->
+    <div class="col-md-9">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="mb-0">
+                {% if current_category %}
+                    {{ current_category.name }} Videos
+                {% else %}
+                    Browse Videos
+                {% endif %}
+            </h1>
+            {% if user.is_authenticated %}
+                <a href="{% url 'videos:video_upload' %}" class="btn btn-primary">
+                    <i class="fas fa-upload"></i> Upload Video
+                </a>
+            {% endif %}
+        </div>
+        
+        <!-- Search Bar -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="get" action="{% url 'videos:video_list' %}" class="d-flex">
+                    <input type="text" name="search" class="form-control me-2" placeholder="Search videos..." value="{{ search_query }}">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        {% if videos %}
+            <div class="row">
+                {% for video in videos %}
+                    <div class="col-md-4 col-sm-6">
+                        <div class="card video-card">
+                            <div class="video-thumbnail">
+                                <a href="{% url 'videos:video_detail' video.slug %}">
+                                    {% if video.thumbnail %}
+                                        <img src="{{ video.thumbnail.url }}" alt="{{ video.title }}">
+                                    {% else %}
+                                        <img src="https://via.placeholder.com/320x180?text=No+Thumbnail" alt="No Thumbnail">
+                                    {% endif %}
+                                    
+                                    {% if video.duration %}
+                                        <div class="video-duration">
+                                            {{ video.duration|format_duration }}
+                                        </div>
+                                    {% endif %}
+                                </a>
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <a href="{% url 'videos:video_detail' video.slug %}" class="text-decoration-none text-dark">
+                                        {{ video.title|truncatechars:60 }}
+                                    </a>
+                                </h5>
+                                <p class="card-text text-muted">
+                                    {{ video.uploader.get_full_name|default:video.uploader.email }}
+                                    <br>
+                                    <small>
+                                        <i class="fas fa-eye"></i> {{ video.view_count }} views
+                                        •
+                                        {{ video.upload_date|timesince }} ago
+                                    </small>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination -->
+            {% if is_paginated %}
+                <nav aria-label="Page navigation" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" aria-label="First">
+                                    <span aria-hidden="true">&laquo;&laquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" aria-label="Previous">
+                                    <span aria-hidden="true">&laquo;</span>
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" aria-label="Next">
+                                    <span aria-hidden="true">&raquo;</span>
+                                </a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}" aria-label="Last">
+                                    <span aria-hidden="true">&raquo;&raquo;</span>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+            
+        {% else %}
+            <div class="alert alert-info">
+                <h4 class="alert-heading">No videos found!</h4>
+                <p>
+                    {% if current_category %}
+                        There are no videos available in the "{{ current_category.name }}" category.
+                    {% else %}
+                        There are no videos available at the moment.
+                    {% endif %}
+                </p>
+                
+                {% if user.is_authenticated %}
+                    <hr>
+                    <p class="mb-0">
+                        <a href="{% url 'videos:video_upload' %}" class="btn btn-primary">
+                            <i class="fas fa-upload"></i> Upload a Video
+                        </a>
+                    </p>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

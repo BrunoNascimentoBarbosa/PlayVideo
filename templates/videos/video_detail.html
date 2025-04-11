@@ -1,0 +1,719 @@
+{% extends 'base.html' %}
+{% load video_tags %}
+
+{% block title %}{{ video.title }} - VideoPlay{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Estilos refinados para melhor UX */
+    :root {
+        --video-shadow: 0 15px 35px rgba(0, 0, 0, 0.18);
+        --card-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+        --card-radius: 12px;
+        --transition-speed: 0.25s;
+    }
+    
+    .video-player-container {
+        position: relative;
+        padding-top: 56.25%; /* 16:9 Aspect Ratio */
+        background-color: #000;
+        border-radius: var(--card-radius);
+        overflow: hidden;
+        box-shadow: var(--video-shadow);
+        margin-bottom: 1rem;
+        border: none;
+        -webkit-touch-callout: none; /* iOS Safari */
+        -webkit-user-select: none; /* Safari */
+        -khtml-user-select: none; /* Konqueror HTML */
+        -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* IE/Edge */
+        user-select: none; /* Non-prefixed version */
+    }
+    
+    .native-video-player {
+        position: absolute !important;
+        top: 0;
+        left: 0;
+        width: 100% !important;
+        height: 100% !important;
+        border-radius: var(--card-radius);
+        object-fit: contain;
+        background-color: #000;
+        max-width: 100%;
+        max-height: 100%;
+        pointer-events: auto;
+        -webkit-user-drag: none;
+        -khtml-user-drag: none;
+        -moz-user-drag: none;
+        -o-user-drag: none;
+        user-drag: none;
+    }
+    
+    /* Proteção anti-cópia */
+    .video-protection-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: calc(100% - 40px); /* Permite clicar nos controles do vídeo */
+        background-color: transparent;
+        z-index: 10;
+        pointer-events: auto;
+    }
+    
+    /* Estilização para a mensagem de aviso de cópia */
+    .copy-protection-message {
+        display: none;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 15px 20px;
+        border-radius: 8px;
+        z-index: 20;
+        text-align: center;
+        animation: fadeOut 2s ease-in-out forwards;
+        animation-delay: 1s;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    }
+    
+    @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; display: none; }
+    }
+    
+    /* Adicionando estilos para os controles nativos do player */
+    video::-webkit-media-controls {
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+    
+    video::-webkit-media-controls-panel {
+        padding: 0 10px;
+    }
+    
+    .video-card {
+        border: none;
+        box-shadow: var(--card-shadow);
+        border-radius: var(--card-radius);
+        overflow: hidden;
+        background-color: white;
+        transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+    }
+    
+    .video-title {
+        font-size: 1.75rem;
+        margin-bottom: 0.5rem;
+        font-weight: 700;
+        color: #333;
+    }
+    
+    .video-meta {
+        background-color: rgba(67, 97, 238, 0.05);
+        border-radius: 10px;
+        padding: 10px 15px;
+        margin-bottom: 1.5rem;
+        transition: background-color var(--transition-speed);
+    }
+    
+    .controls-row {
+        padding: 0.6rem;
+        background-color: #f8f9fa;
+        border-radius: 0 0 var(--card-radius) var(--card-radius);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .playback-speed-controls {
+        border-top: 1px solid rgba(0,0,0,0.05);
+        padding: 10px 15px;
+        background-color: #f8f9fa;
+    }
+    
+    .speed-btn {
+        min-width: 54px;
+        font-weight: 500;
+        transition: all 0.15s ease;
+        border-radius: 6px;
+    }
+    
+    .speed-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .speed-btn.active {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(67, 97, 238, 0.2);
+    }
+    
+    .uploader-info {
+        display: flex;
+        align-items: center;
+        background-color: #fff;
+        border-radius: var(--card-radius);
+        padding: 18px;
+        margin-bottom: 1.5rem;
+        box-shadow: var(--card-shadow);
+        border: none;
+        transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+    }
+    
+    .uploader-info:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+    }
+    
+    .uploader-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        overflow: hidden;
+        margin-right: 15px;
+        background-color: #f8f9fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #adb5bd;
+        font-size: 1.5rem;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+    }
+    
+    .description-card {
+        border-radius: var(--card-radius);
+        overflow: hidden;
+        border: none;
+        box-shadow: var(--card-shadow);
+        margin-bottom: 2rem;
+        transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+    }
+    
+    .description-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+    }
+    
+    .description-header {
+        background-color: #f8f9fa;
+        padding: 15px 20px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    }
+    
+    .description-content {
+        padding: 20px;
+        color: #495057;
+        font-size: 1rem;
+        line-height: 1.6;
+    }
+    
+    .related-video-item {
+        transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+        border-radius: 8px;
+        margin: 5px 0;
+    }
+    
+    .related-video-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        background-color: #f8f9fa;
+    }
+    
+    .related-thumbnail {
+        width: 120px;
+        height: 68px;
+        overflow: hidden;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    }
+    
+    .badge-category {
+        transition: all 0.2s ease;
+    }
+    
+    .badge-category:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    
+    .related-videos-card {
+        border-radius: var(--card-radius);
+        overflow: hidden;
+        box-shadow: var(--card-shadow);
+        transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+    }
+    
+    .related-videos-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+    }
+    
+    @media (max-width: 768px) {
+        .video-player-container {
+            margin-left: -1rem;
+            margin-right: -1rem;
+            border-radius: 0;
+            box-shadow: none;
+        }
+        
+        .native-video-player {
+            border-radius: 0;
+        }
+        
+        .video-title {
+            font-size: 1.5rem;
+        }
+        
+        .controls-row {
+            border-radius: 0;
+        }
+        
+        .playback-speed-controls {
+            overflow-x: auto;
+            white-space: nowrap;
+            padding: 10px;
+        }
+        
+        .speed-btn {
+            min-width: 45px;
+            padding-left: 8px;
+            padding-right: 8px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Main Video Section with Immersive Design -->
+<div class="row g-4">
+    <!-- Main Content Column -->
+    <div class="col-lg-8">
+        <!-- Video Player Card With Enhanced UX -->
+        <div class="video-card mb-4">
+            <!-- Video Player Container -->
+            <div class="video-player-container">
+                <video id="nativeVideoPlayer" class="native-video-player no-plyr w-100 h-100" poster="{% if video.thumbnail %}{{ video.thumbnail.url }}{% endif %}" controls crossorigin playsinline controlsList="nodownload nofullscreen noremoteplayback" oncontextmenu="return false;">
+                    <source src="{{ video.video_file.url }}" type="video/mp4">
+                    <p>Seu navegador não suporta vídeos HTML5.</p>
+                </video>
+                <div id="videoProtectionOverlay" class="video-protection-overlay"></div>
+                <div id="copyProtectionMessage" class="copy-protection-message">
+                    <i class="fas fa-shield-alt me-2"></i> Cópia não permitida. Este conteúdo é protegido.
+                </div>
+            </div>
+            
+            <!-- Controles de Velocidade de Reprodução -->
+            <div class="playback-speed-controls">
+                <div class="d-flex justify-content-center align-items-center">
+                    <span class="me-2 text-nowrap"><i class="fas fa-tachometer-alt me-1"></i> Velocidade:</span>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-primary speed-btn" data-speed="0.5">0.5x</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary speed-btn" data-speed="0.75">0.75x</button>
+                        <button type="button" class="btn btn-sm btn-primary speed-btn active" data-speed="1">1x</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary speed-btn" data-speed="1.25">1.25x</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary speed-btn" data-speed="1.5">1.5x</button>
+                        <button type="button" class="btn btn-sm btn-outline-primary speed-btn" data-speed="2">2x</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Video Title and Meta Information -->
+        <h1 class="video-title">{{ video.title }}</h1>
+        
+        <div class="video-meta">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="badge bg-primary me-2">{{ video.get_status_display }}</span>
+                    {% if video.category %}
+                        <a href="{% url 'videos:video_by_category' video.category.slug %}" class="badge bg-secondary text-decoration-none badge-category">
+                            <i class="fas fa-tag me-1"></i> {{ video.category.name }}
+                        </a>
+                    {% endif %}
+                    
+                    {% if video.duration %}
+                    <span class="badge bg-light text-dark ms-2">
+                        <i class="fas fa-clock me-1"></i> {{ video.duration|format_duration|default:'00:00' }}
+                    </span>
+                    {% endif %}
+                    
+                    <span class="badge bg-light text-dark ms-2">
+                        <i class="fas fa-eye me-1"></i> {{ video.view_count }} visualizações
+                    </span>
+                </div>
+                <div class="text-muted">
+                    <i class="fas fa-calendar-alt me-1"></i> {{ video.upload_date|date:"d/m/Y" }}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Uploader Information -->
+        <div class="uploader-info">
+            <div class="uploader-avatar">
+                {% if video.uploader.profile_image %}
+                    <img src="{{ video.uploader.profile_image.url }}" alt="{{ video.uploader }}" class="w-100 h-100 object-fit-cover">
+                {% else %}
+                    <i class="fas fa-user"></i>
+                {% endif %}
+            </div>
+            <div>
+                <h5 class="mb-0">{{ video.uploader.get_full_name|default:video.uploader.email }}</h5>
+                <p class="mb-0 text-muted">Enviado {{ video.upload_date|timesince }} atrás</p>
+            </div>
+            
+            {% if user == video.uploader or user.is_admin %}
+            <div class="ms-auto">
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" id="videoActions" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-cog me-1"></i> Ações
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="videoActions">
+                        <li>
+                            <a class="dropdown-item" href="{% url 'videos:video_edit' video.slug %}">
+                                <i class="fas fa-edit me-2"></i> Editar Vídeo
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item text-danger" href="{% url 'videos:video_delete' video.slug %}">
+                                <i class="fas fa-trash me-2"></i> Excluir Vídeo
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Video Description -->
+        {% if video.description %}
+        <div class="description-card mb-4">
+            <div class="description-header">
+                <h5 class="mb-0"><i class="fas fa-align-left me-2"></i>Descrição</h5>
+            </div>
+            <div class="description-content">
+                {{ video.description|linebreaks }}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Sidebar - Related Videos Column -->
+    <div class="col-lg-4">
+        <!-- Related Videos Card -->
+        <div class="card mb-4 border-0 related-videos-card">
+            <div class="card-header bg-primary text-white py-3">
+                <h5 class="mb-0"><i class="fas fa-film me-2"></i>Vídeos Relacionados</h5>
+            </div>
+            <div class="card-body p-3">
+                {% if related_videos %}
+                    <div class="list-group list-group-flush">
+                        {% for related in related_videos %}
+                            <a href="{% url 'videos:video_detail' related.slug %}" class="list-group-item list-group-item-action border-0 py-3 px-3 related-video-item">
+                                <div class="d-flex">
+                                    <div class="flex-shrink-0 me-3 related-thumbnail">
+                                        {% if related.thumbnail %}
+                                            <img src="{{ related.thumbnail.url }}" alt="{{ related.title }}" style="width: 100%; height: 100%; object-fit: cover;">
+                                        {% else %}
+                                            <div class="bg-light d-flex align-items-center justify-content-center h-100">
+                                                <i class="fas fa-film text-muted"></i>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1 text-primary-emphasis">{{ related.title|truncatechars:50 }}</h6>
+                                        <small class="text-muted">
+                                            <i class="fas fa-user-circle me-1"></i> {{ related.uploader.get_full_name|default:related.uploader.email|truncatechars:15 }}
+                                            <br>
+                                            <i class="fas fa-eye me-1"></i> {{ related.view_count }} • {{ related.upload_date|timesince }} atrás
+                                        </small>
+                                    </div>
+                                </div>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center p-4">
+                        <i class="fas fa-film fa-3x text-muted mb-3"></i>
+                        <p>Nenhum vídeo relacionado encontrado.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Elementos de vídeo
+        const videoElement = document.getElementById('nativeVideoPlayer');
+        const videoContainer = document.querySelector('.video-player-container');
+        
+        if (!videoElement) {
+            console.error('Elemento de vídeo não encontrado');
+            return;
+        }
+        
+        // Proteção contra clique direito e download do vídeo
+        if (videoElement) {
+            const protectionOverlay = document.getElementById('videoProtectionOverlay');
+            const copyMessage = document.getElementById('copyProtectionMessage');
+            
+            // Função para mostrar mensagem de proteção contra cópia
+            function showCopyProtectionMessage() {
+                if (copyMessage) {
+                    copyMessage.style.display = 'block';
+                    setTimeout(() => {
+                        copyMessage.style.display = 'none';
+                    }, 3000);
+                }
+            }
+            
+            // Desabilita o menu de contexto no vídeo
+            videoElement.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                showCopyProtectionMessage();
+                return false;
+            });
+            
+            // Desabilita o menu de contexto no container do vídeo
+            if (videoContainer) {
+                videoContainer.addEventListener('contextmenu', function(e) {
+                    e.preventDefault();
+                    showCopyProtectionMessage();
+                    return false;
+                });
+            }
+            
+            // Configura o overlay de proteção
+            if (protectionOverlay) {
+                // Bloqueia o menu de contexto no overlay
+                protectionOverlay.addEventListener('contextmenu', function(e) {
+                    e.preventDefault();
+                    showCopyProtectionMessage();
+                    return false;
+                });
+                
+                // Certifica que o overlay não interfira com os controles de vídeo
+                protectionOverlay.addEventListener('click', function(e) {
+                    // Permitir que os cliques passem para o vídeo (play/pause)
+                    if (videoElement.paused) {
+                        videoElement.play().catch(err => console.log('Reprodução bloqueada pelo navegador:', err));
+                    } else {
+                        videoElement.pause();
+                    }
+                });
+            }
+            
+            // Impede que arrastar o vídeo para fora da janela salve o arquivo
+            videoElement.addEventListener('dragstart', function(e) {
+                e.preventDefault();
+                return false;
+            });
+            
+            // Impede seleção do vídeo
+            videoElement.addEventListener('selectstart', function(e) {
+                e.preventDefault();
+                return false;
+            });
+            
+            // Bloqueia a captura de teclas no vídeo
+            videoElement.addEventListener('keydown', function(e) {
+                // Bloqueia teclas como Print Screen, Save As, etc.
+                if (e.key === 'PrintScreen' || 
+                    (e.ctrlKey && e.key === 's') || 
+                    (e.ctrlKey && e.key === 'p')) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+        }
+        
+        // Restaura o progresso anterior
+        const savedTime = localStorage.getItem('video-{{ video.id }}-progress');
+        if (savedTime && videoElement) {
+            videoElement.addEventListener('loadedmetadata', function() {
+                const savedTimeFloat = parseFloat(savedTime);
+                if (savedTimeFloat && !isNaN(savedTimeFloat) && savedTimeFloat > 0) {
+                    videoElement.currentTime = savedTimeFloat;
+                    
+                    // Mostrar mensagem temporária de retomada
+                    const mins = Math.floor(savedTimeFloat / 60);
+                    const secs = Math.floor(savedTimeFloat % 60);
+                    
+                    // Criar elementos para a mensagem de retomada
+                    const resumeMsg = document.createElement('div');
+                    resumeMsg.className = 'alert alert-info alert-dismissible fade show mt-2';
+                    resumeMsg.innerHTML = `
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        <i class="fas fa-history me-2"></i> Retomando de ${mins}:${secs < 10 ? '0' + secs : secs}
+                    `;
+                    
+                    // Inserir a mensagem após o container do vídeo
+                    const containerElement = videoElement.closest('.video-player-container');
+                    if (containerElement && containerElement.parentNode) {
+                        containerElement.parentNode.insertBefore(resumeMsg, containerElement.nextSibling);
+                        
+                        // Remover a mensagem após 5 segundos
+                        setTimeout(function() {
+                            resumeMsg.classList.remove('show');
+                            setTimeout(function() {
+                                if (resumeMsg.parentNode) {
+                                    resumeMsg.parentNode.removeChild(resumeMsg);
+                                }
+                            }, 500);
+                        }, 5000);
+                    }
+                }
+            });
+        }
+        
+        // Salvar o progresso à medida que o vídeo é reproduzido
+        let lastSaveTime = 0;
+        
+        if (videoElement) {
+            videoElement.addEventListener('timeupdate', function() {
+                const currentTime = videoElement.currentTime;
+                const now = Date.now();
+                
+                // Salvar o progresso a cada 5 segundos apenas se o usuário tiver assistido mais de 10 segundos
+                if (currentTime > 10 && (now - lastSaveTime > 5000)) {
+                    localStorage.setItem('video-{{ video.id }}-progress', currentTime.toString());
+                    lastSaveTime = now;
+                }
+            });
+            
+            // Configurar os botões de velocidade de reprodução
+            const speedButtons = document.querySelectorAll('.speed-btn');
+            speedButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const speed = parseFloat(this.getAttribute('data-speed'));
+                    if (!isNaN(speed)) {
+                        // Definir a velocidade de reprodução
+                        videoElement.playbackRate = speed;
+                        
+                        // Atualizar a aparência dos botões
+                        speedButtons.forEach(btn => {
+                            btn.classList.remove('active');
+                            btn.classList.remove('btn-primary');
+                            btn.classList.add('btn-outline-primary');
+                        });
+                        
+                        this.classList.remove('btn-outline-primary');
+                        this.classList.add('btn-primary');
+                        this.classList.add('active');
+                        
+                        // Salvar a preferência de velocidade
+                        localStorage.setItem('video-playback-speed', speed);
+                        
+                        // Opcional: mostrar feedback
+                        const speedMsg = document.createElement('div');
+                        speedMsg.className = 'position-fixed bottom-0 end-0 p-3';
+                        speedMsg.style.zIndex = '11';
+                        speedMsg.innerHTML = `
+                            <div class="toast show align-items-center text-white bg-primary border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                                <div class="d-flex">
+                                    <div class="toast-body">
+                                        <i class="fas fa-tachometer-alt me-2"></i> Velocidade alterada para ${speed}x
+                                    </div>
+                                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                                </div>
+                            </div>
+                        `;
+                        
+                        document.body.appendChild(speedMsg);
+                        setTimeout(() => {
+                            speedMsg.remove();
+                        }, 2000);
+                    }
+                });
+            });
+            
+            // Restaurar a preferência de velocidade salva
+            const savedSpeed = localStorage.getItem('video-playback-speed');
+            if (savedSpeed) {
+                const speed = parseFloat(savedSpeed);
+                if (!isNaN(speed)) {
+                    videoElement.playbackRate = speed;
+                    
+                    // Atualizar botão ativo
+                    const activeButton = document.querySelector(`.speed-btn[data-speed="${savedSpeed}"]`);
+                    if (activeButton) {
+                        speedButtons.forEach(btn => {
+                            btn.classList.remove('active');
+                            btn.classList.remove('btn-primary');
+                            btn.classList.add('btn-outline-primary');
+                        });
+                        
+                        activeButton.classList.remove('btn-outline-primary');
+                        activeButton.classList.add('btn-primary');
+                        activeButton.classList.add('active');
+                    }
+                }
+            }
+            
+            // Atalhos de teclado para controle de velocidade
+            document.addEventListener('keydown', function(e) {
+                // Verifica se o vídeo está em foco ou se a página está em foco
+                if (document.activeElement === videoElement || document.activeElement === document.body) {
+                    // Tecla '+' para aumentar velocidade
+                    if (e.key === '+' || e.key === '=') {
+                        const currentSpeed = videoElement.playbackRate;
+                        const newSpeed = Math.min(currentSpeed + 0.25, 2);
+                        
+                        // Atualiza a velocidade
+                        videoElement.playbackRate = newSpeed;
+                        localStorage.setItem('video-playback-speed', newSpeed);
+                        
+                        // Atualiza o botão ativo
+                        const closestSpeedBtn = findClosestSpeedButton(newSpeed);
+                        if (closestSpeedBtn) {
+                            closestSpeedBtn.click();
+                        }
+                    }
+                    
+                    // Tecla '-' para diminuir velocidade
+                    if (e.key === '-') {
+                        const currentSpeed = videoElement.playbackRate;
+                        const newSpeed = Math.max(currentSpeed - 0.25, 0.5);
+                        
+                        // Atualiza a velocidade
+                        videoElement.playbackRate = newSpeed;
+                        localStorage.setItem('video-playback-speed', newSpeed);
+                        
+                        // Atualiza o botão ativo
+                        const closestSpeedBtn = findClosestSpeedButton(newSpeed);
+                        if (closestSpeedBtn) {
+                            closestSpeedBtn.click();
+                        }
+                    }
+                    
+                    // Tecla '0' para resetar para velocidade normal
+                    if (e.key === '0') {
+                        videoElement.playbackRate = 1;
+                        localStorage.setItem('video-playback-speed', 1);
+                        
+                        // Atualiza o botão ativo para 1x
+                        const normalSpeedBtn = document.querySelector('.speed-btn[data-speed="1"]');
+                        if (normalSpeedBtn) {
+                            normalSpeedBtn.click();
+                        }
+                    }
+                }
+            });
+            
+            // Função para encontrar o botão de velocidade mais próximo
+            function findClosestSpeedButton(speed) {
+                const speedValues = [0.5, 0.75, 1, 1.25, 1.5, 2];
+                const closestSpeed = speedValues.reduce((prev, curr) => {
+                    return (Math.abs(curr - speed) < Math.abs(prev - speed) ? curr : prev);
+                });
+                
+                return document.querySelector(`.speed-btn[data-speed="${closestSpeed}"]`);
+            }
+        }
+    });
+</script>
+{% endblock %} 

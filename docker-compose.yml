@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    restart: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - media_volume:/app/media
+    environment:
+      - DEBUG=True
+      - SECRET_KEY=development_secret_key
+      - DATABASE_URL=sqlite:///db.sqlite3
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+
+  # Serviço opcional para PostgreSQL em ambiente de produção
+  # db:
+  #   image: postgres:14
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   environment:
+  #     - POSTGRES_DB=videoplay
+  #     - POSTGRES_USER=videoplay
+  #     - POSTGRES_PASSWORD=securepassword
+
+volumes:
+  media_volume:
+  # postgres_data:  # Necessário se usar o PostgreSQL 

@@ -1,0 +1,365 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload Video - VideoPlay{% endblock %}
+
+{% block extra_css %}
+<style>
+    .upload-area {
+        border: 2px dashed #ccc;
+        border-radius: 10px;
+        padding: 40px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .upload-area:hover {
+        border-color: var(--primary-color);
+    }
+    
+    .upload-area.active {
+        border-color: var(--primary-color);
+        background-color: rgba(52, 152, 219, 0.1);
+    }
+    
+    .upload-icon {
+        font-size: 50px;
+        color: #ccc;
+        margin-bottom: 20px;
+    }
+    
+    .progress {
+        height: 20px;
+        margin-top: 20px;
+    }
+    
+    .thumbnail-preview {
+        max-width: 100%;
+        max-height: 200px;
+        display: block;
+        margin: 10px auto;
+        border-radius: 5px;
+    }
+    
+    #videoPreview {
+        max-width: 100%;
+        max-height: 300px;
+        margin: 20px auto;
+        display: block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card shadow">
+            <div class="card-header bg-dark text-white py-3">
+                <h4 class="mb-0"><i class="fas fa-upload"></i> Upload New Video</h4>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" id="videoUploadForm">
+                    {% csrf_token %}
+                    
+                    {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <h4 class="alert-heading">Please correct the following errors:</h4>
+                            <ul>
+                                {% for field in form %}
+                                    {% for error in field.errors %}
+                                        <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                                {% for error in form.non_field_errors %}
+                                    <li>{{ error }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.title.id_for_label }}" class="form-label">{{ form.title.label }}</label>
+                                {{ form.title }}
+                                {% if form.title.help_text %}
+                                    <div class="form-text">{{ form.title.help_text }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.category.id_for_label }}" class="form-label">{{ form.category.label }}</label>
+                                {{ form.category }}
+                                {% if form.category.help_text %}
+                                    <div class="form-text">{{ form.category.help_text }}</div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.status.id_for_label }}" class="form-label">{{ form.status.label }}</label>
+                                {{ form.status }}
+                                {% if form.status.help_text %}
+                                    <div class="form-text">{{ form.status.help_text }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+                                {{ form.description }}
+                                {% if form.description.help_text %}
+                                    <div class="form-text">{{ form.description.help_text }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="row mb-4">
+                        <div class="col-lg-8">
+                            <div class="mb-3">
+                                <label class="form-label">{{ form.video_file.label }}</label>
+                                <div class="upload-area" id="videoDropArea">
+                                    <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                                    <h5>Drag & Drop your video file here</h5>
+                                    <p>or</p>
+                                    <button type="button" class="btn btn-primary" id="browseVideosBtn">Browse Files</button>
+                                    <input type="file" name="{{ form.video_file.name }}" id="{{ form.video_file.id_for_label }}" accept="video/*" style="display: none;">
+                                    {% if form.video_file.help_text %}
+                                        <div class="form-text mt-2">{{ form.video_file.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="progress d-none" id="videoUploadProgress">
+                                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%"></div>
+                                </div>
+                                
+                                <div id="videoPreviewContainer" class="d-none mt-3">
+                                    <h5>Video Preview</h5>
+                                    <video id="videoPreview" controls></video>
+                                    <div class="d-flex align-items-center">
+                                        <span id="videoFileName" class="me-auto"></span>
+                                        <span id="videoFileSize" class="badge bg-secondary ms-2"></span>
+                                        <span id="videoDuration" class="badge bg-dark ms-2"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-4">
+                            <div class="mb-3">
+                                <label class="form-label">{{ form.thumbnail.label }}</label>
+                                <div class="upload-area" id="thumbnailDropArea" style="padding: 20px">
+                                    <i class="fas fa-image upload-icon" style="font-size: 30px"></i>
+                                    <h6>Add Thumbnail Image</h6>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" id="browseThumbnailBtn">Browse Images</button>
+                                    <input type="file" name="{{ form.thumbnail.name }}" id="{{ form.thumbnail.id_for_label }}" accept="image/*" style="display: none;">
+                                </div>
+                                
+                                <div id="thumbnailPreviewContainer" class="d-none mt-3">
+                                    <img id="thumbnailPreview" class="thumbnail-preview">
+                                    <div class="text-center">
+                                        <button type="button" class="btn btn-sm btn-danger" id="removeThumbnailBtn">
+                                            <i class="fas fa-trash"></i> Remove
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                {% if form.thumbnail.help_text %}
+                                    <div class="form-text mt-2">{{ form.thumbnail.help_text }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'videos:video_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-cloud-upload-alt"></i> Upload Video
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Video file upload
+        const videoInput = document.getElementById('{{ form.video_file.id_for_label }}');
+        const videoDropArea = document.getElementById('videoDropArea');
+        const browseVideosBtn = document.getElementById('browseVideosBtn');
+        const videoPreviewContainer = document.getElementById('videoPreviewContainer');
+        const videoPreview = document.getElementById('videoPreview');
+        const videoFileName = document.getElementById('videoFileName');
+        const videoFileSize = document.getElementById('videoFileSize');
+        const videoDuration = document.getElementById('videoDuration');
+        const videoUploadProgress = document.getElementById('videoUploadProgress');
+        
+        // Thumbnail upload
+        const thumbnailInput = document.getElementById('{{ form.thumbnail.id_for_label }}');
+        const thumbnailDropArea = document.getElementById('thumbnailDropArea');
+        const browseThumbnailBtn = document.getElementById('browseThumbnailBtn');
+        const thumbnailPreviewContainer = document.getElementById('thumbnailPreviewContainer');
+        const thumbnailPreview = document.getElementById('thumbnailPreview');
+        const removeThumbnailBtn = document.getElementById('removeThumbnailBtn');
+        
+        // Video upload functionality
+        browseVideosBtn.addEventListener('click', function() {
+            videoInput.click();
+        });
+        
+        videoInput.addEventListener('change', function() {
+            handleVideoFileSelect(this.files[0]);
+        });
+        
+        videoDropArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.add('active');
+        });
+        
+        videoDropArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.remove('active');
+        });
+        
+        videoDropArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.remove('active');
+            
+            if (e.dataTransfer.files.length) {
+                const file = e.dataTransfer.files[0];
+                if (file.type.startsWith('video/')) {
+                    videoInput.files = e.dataTransfer.files;
+                    handleVideoFileSelect(file);
+                } else {
+                    alert('Please upload a valid video file');
+                }
+            }
+        });
+        
+        function handleVideoFileSelect(file) {
+            if (!file) return;
+            
+            // Show progress (simulated for now)
+            videoUploadProgress.classList.remove('d-none');
+            const progressBar = videoUploadProgress.querySelector('.progress-bar');
+            
+            let progress = 0;
+            const interval = setInterval(function() {
+                progress += 5;
+                progressBar.style.width = progress + '%';
+                progressBar.setAttribute('aria-valuenow', progress);
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    displayVideoPreview(file);
+                }
+            }, 50);
+        }
+        
+        function displayVideoPreview(file) {
+            // File details
+            videoFileName.textContent = file.name;
+            videoFileSize.textContent = formatFileSize(file.size);
+            
+            // Create video preview
+            const url = URL.createObjectURL(file);
+            videoPreview.src = url;
+            videoPreview.onloadedmetadata = function() {
+                videoDuration.textContent = formatDuration(videoPreview.duration);
+            };
+            
+            videoPreviewContainer.classList.remove('d-none');
+            videoDropArea.classList.add('d-none');
+        }
+        
+        // Thumbnail upload functionality
+        browseThumbnailBtn.addEventListener('click', function() {
+            thumbnailInput.click();
+        });
+        
+        thumbnailInput.addEventListener('change', function() {
+            handleThumbnailSelect(this.files[0]);
+        });
+        
+        thumbnailDropArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.add('active');
+        });
+        
+        thumbnailDropArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.remove('active');
+        });
+        
+        thumbnailDropArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.remove('active');
+            
+            if (e.dataTransfer.files.length) {
+                const file = e.dataTransfer.files[0];
+                if (file.type.startsWith('image/')) {
+                    thumbnailInput.files = e.dataTransfer.files;
+                    handleThumbnailSelect(file);
+                } else {
+                    alert('Please upload a valid image file');
+                }
+            }
+        });
+        
+        function handleThumbnailSelect(file) {
+            if (!file) return;
+            
+            const url = URL.createObjectURL(file);
+            thumbnailPreview.src = url;
+            thumbnailPreviewContainer.classList.remove('d-none');
+            thumbnailDropArea.classList.add('d-none');
+        }
+        
+        removeThumbnailBtn.addEventListener('click', function() {
+            thumbnailInput.value = '';
+            thumbnailPreviewContainer.classList.add('d-none');
+            thumbnailDropArea.classList.remove('d-none');
+        });
+        
+        // Helper functions
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        function formatDuration(seconds) {
+            const hrs = Math.floor(seconds / 3600);
+            const mins = Math.floor((seconds % 3600) / 60);
+            const secs = Math.floor(seconds % 60);
+            
+            let result = '';
+            if (hrs > 0) {
+                result += hrs + ':' + (mins < 10 ? '0' : '');
+            }
+            result += mins + ':' + (secs < 10 ? '0' : '') + secs;
+            
+            return result;
+        }
+    });
+</script>
+{% endblock %} 
